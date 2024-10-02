@@ -82,6 +82,6 @@ int main() {
     //cierro ambos sockets
     close(socketConexion);
     close(socketServidor);
-
+    //comentario
     return 0;
 }
