@@ -50,37 +50,39 @@ int main() {
     //Hago que imprima desde que puerto está escuchando, paso el puerto de red a host.
     printf("Servidor escuchando en el puerto %d...\n", ntohs(direccionSocket.sin_port));
 
+    while(1){
 
-    tamaño = sizeof(direccionCliente);
-    //acepto la conexion de la dirección del Cliente y el socket
-    socketConexion = accept(socketServidor, (struct sockaddr *)&direccionCliente, &tamaño);
+        tamaño = sizeof(direccionCliente);
+        //acepto la conexion de la dirección del Cliente y el socket
+        socketConexion = accept(socketServidor, (struct sockaddr *)&direccionCliente, &tamaño);
 
-    if (socketConexion < 0) {
-        //compruebo errores
-        perror("Error al intentar aceptar");
-        exit(EXIT_FAILURE);
+        if (socketConexion < 0) {
+            //compruebo errores
+            perror("Error al intentar aceptar");
+            exit(EXIT_FAILURE);
+        }
+
+        //printeo que ha sido aceptada la dirección del cliente en formato texto y el puerto del cliente
+        printf("Conexión aceptada desde %s:%d\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+        
+        //copio el mensaje en mi string
+        strcpy(string, "Hola cliente, conexión establecida.\n");
+        //envío el mensaje al socket de conexion
+        ssize_t bytes_enviados = send(socketConexion, string, strlen(string), 0);
+
+        if (bytes_enviados < 0) {
+            //compruebo error
+            perror("Error al enviar datos");
+            exit(EXIT_FAILURE);
+        }
+
+        //imprimo el nº de bytes enviados
+        printf("Número de bytes enviados: %zd\n", bytes_enviados);
+        //cierro ambos sockets
+        close(socketConexion);
+        
     }
 
-
-    //printeo que ha sido aceptada la dirección del cliente en formato texto y el puerto del cliente
-    printf("Conexión aceptada desde %s:%d\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-
-    
-    //copio el mensaje en mi string
-    strcpy(string, "Hola cliente, conexión establecida.\n");
-    //envío el mensaje al socket de conexion
-    ssize_t bytes_enviados = send(socketConexion, string, strlen(string), 0);
-
-    if (bytes_enviados < 0) {
-        //compruebo error
-        perror("Error al enviar datos");
-        exit(EXIT_FAILURE);
-    }
-
-    //imprimo el nº de bytes enviados
-    printf("Número de bytes enviados: %zd\n", bytes_enviados);
-    //cierro ambos sockets
-    close(socketConexion);
     close(socketServidor);
 
     return 0;
