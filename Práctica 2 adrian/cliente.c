@@ -27,8 +27,7 @@ int main(int argc, char const *argv[])
     char mensajeRecibido[10000];  // Buffer para almacenar el mensaje recibido
 
     // Convertimos el puerto a entero y lo guardamos como uint16_t
-    uint16_t puertoServidor;
-    puertoServidor = (uint16_t)atoi(argv[2]); 
+    uint16_t puertoServidor = (uint16_t)atoi(argv[2]); 
     
     // Creamos el socket del cliente
     int socketCliente;
@@ -57,18 +56,21 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Hacemos una pausa para permitir que el servidor envíe el mensaje
-    sleep(2); // Esto es necesario en localhost, para que los mensajes se envíen correctamente
+    // Bucle para recibir datos
+    ssize_t n;
+    size_t tamano_mensaje = 5; // Cambia este valor para experimentar con diferentes tamaños
+    printf("Recibiendo datos...\n");
 
-    // Recibimos el mensaje del servidor
-    ssize_t bytesRecibidos = recv(socketCliente, mensajeRecibido, sizeof(mensajeRecibido), 0);
-    if (bytesRecibidos < 0) {
-        perror("Error al recibir el mensaje");
-        exit(EXIT_FAILURE);
+    while ((n = recv(socketCliente, mensajeRecibido, tamano_mensaje, 0)) > 0) {
+        // Añadimos un null terminator para manejarlo como cadena
+        mensajeRecibido[n] = '\0';
+        printf("Mensaje recibido: %s. Número de bytes: %zd\n", mensajeRecibido, n);
     }
 
-    // Mostramos el mensaje recibido y la cantidad de bytes
-    printf("Mensaje: %s. Número de bytes: %zd\n", mensajeRecibido, bytesRecibidos);
+    // Comprobamos si hubo un error en la recepción
+    if (n < 0) {
+        perror("Error al recibir el mensaje");
+    }
 
     // Cerramos el socket
     close(socketCliente);
