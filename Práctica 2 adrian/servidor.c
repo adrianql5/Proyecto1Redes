@@ -6,11 +6,11 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-int socketCliente; // Socket para la conexión con el cliente
-socklen_t tamañoDireccionCliente; // Tamaño de la estructura sockaddr_in del cliente
-ssize_t totalBytesEnviados; // Contador de los bytes enviados
 
 int main(int argc, char **argv) {
+    int socketCliente; // Socket para la conexión con el cliente
+    socklen_t tamañoDireccionCliente; // Tamaño de la estructura sockaddr_in del cliente
+    ssize_t totalBytesEnviados; // Contador de los bytes enviados
     struct sockaddr_in direccionServidor; // Dirección del socket del servidor
     struct sockaddr_in direccionCliente;  // Dirección del cliente
 
