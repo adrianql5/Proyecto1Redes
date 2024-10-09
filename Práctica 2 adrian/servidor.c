@@ -6,91 +6,95 @@
 #include <unistd.h>
 #include <inttypes.h>
 
-int socketServidor;
-int socketConexion;
-
-struct sockaddr_in direccionSocket;
-struct sockaddr_in direccionCliente;
-
-socklen_t tamaño;
-
-uint16_t puerto;
-uint16_t puertoared;
-
-ssize_t contador_bytes;
-
-char string[1000];
+int socketCliente; // Socket para la conexión con el cliente
+socklen_t tamañoDireccionCliente; // Tamaño de la estructura sockaddr_in del cliente
+ssize_t totalBytesEnviados; // Contador de los bytes enviados
 
 int main(int argc, char **argv) {
-    // Verificar que se pase un puerto en hexadecimal
-    if (argc < 2) {
-        fprintf(stderr, "Debes escribir el puerto en hexadecimal\n");
+    struct sockaddr_in direccionServidor; // Dirección del socket del servidor
+    struct sockaddr_in direccionCliente;  // Dirección del cliente
+
+    char mensajeInicial[1000];  // Primer mensaje que se enviará al cliente
+    char mensaje2[] = "Segundo mensaje máquina";  // Segundo mensaje que se enviará al cliente
+
+    // Verificar que se pase un puerto en el argumento
+    if (argc != 2) {
+        printf("Indique un puerto de escucha como argumento\n");
         exit(EXIT_FAILURE);
     }
 
-    // Convertir el puerto de cadena a entero (en hexadecimal)
-    puerto = atoi(argv[1]);
-    puertoared = htons(puerto); // Convertir el puerto de host a formato de red
+    // Convertir el puerto de cadena a entero y a formato de red
+    uint16_t puertoServidor = atoi(argv[1]);
+    puertoServidor = htons(puertoServidor); // Convertir el puerto de host a formato de red
 
-    // Crear el socket del servidor
-    socketServidor = socket(AF_INET, SOCK_STREAM, 0); // IPv4, orientado a conexión (TCP)
+    // Crear el socket del servidor (IPv4, orientado a conexión - TCP)
+    int socketServidor = socket(AF_INET, SOCK_STREAM, 0);
     if (socketServidor < 0) {
-        perror("No se pudo crear el socket de Servidor");
+        perror("No se pudo crear el socket del servidor");
         exit(EXIT_FAILURE);
     }
 
-    // Configurar la estructura de la dirección del socket
-    direccionSocket.sin_family = AF_INET; // Formato IPv4
-    direccionSocket.sin_addr.s_addr = htonl(INADDR_ANY); // Aceptar conexiones desde cualquier IP local
-    direccionSocket.sin_port = puertoared; // Número de puerto
+    // Configurar la estructura de la dirección del servidor
+    direccionServidor.sin_family = AF_INET;  // Usamos IPv4
+    direccionServidor.sin_addr.s_addr = htonl(INADDR_ANY);  // Aceptar conexiones desde cualquier IP local
+    direccionServidor.sin_port = puertoServidor;  // Puerto de escucha
 
-    // Asignar la dirección al socket
-    if (bind(socketServidor, (struct sockaddr *)&direccionSocket, sizeof(struct sockaddr_in)) < 0) {
+    // Asignar la dirección al socket del servidor
+    if (bind(socketServidor, (struct sockaddr *)&direccionServidor, sizeof(struct sockaddr_in)) < 0) {
         perror("No se pudo asignar la dirección");
         exit(EXIT_FAILURE);
     }
 
-    // Poner el servidor en escucha
-    if (listen(socketServidor, 1) < 0) {
+    // Poner el servidor en modo escucha (hasta 5 conexiones en cola)
+    if (listen(socketServidor, 5) < 0) {
         perror("Error al escuchar");
         exit(EXIT_FAILURE);
     }
 
-    // Imprimir el puerto en el que está escuchando (convirtiéndolo de red a host)
-    printf("Servidor escuchando en el puerto %d...\n", ntohs(direccionSocket.sin_port));
+    // Imprimir el puerto en el que está escuchando el servidor
+    printf("Servidor escuchando en el puerto %d...\n", ntohs(direccionServidor.sin_port));
 
     while (1) {
-        tamaño = sizeof(direccionCliente);
+        tamañoDireccionCliente = sizeof(direccionCliente);
         // Aceptar conexión de un cliente
-        socketConexion = accept(socketServidor, (struct sockaddr *)&direccionCliente, &tamaño);
-
-        if (socketConexion < 0) {
-            perror("Error al intentar aceptar");
+        socketCliente = accept(socketServidor, (struct sockaddr *)&direccionCliente, &tamañoDireccionCliente);
+        if (socketCliente < 0) {
+            perror("Error al aceptar la conexión");
             exit(EXIT_FAILURE);
         }
 
-        // Imprimir la dirección IP y puerto del cliente
-        printf("Conexión aceptada desde %s:%d\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+        // Obtener y mostrar la dirección IP y puerto del cliente
+        char ipCliente[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(direccionCliente.sin_addr), ipCliente, INET_ADDRSTRLEN);
+        printf("La dirección IP de la conexión entrante es: %s:%d\n", ipCliente, ntohs(direccionCliente.sin_port));
 
-        // Copiar un mensaje al string y enviarlo al cliente
-        strcpy(string, "Hola cliente, conexión establecida.\n");
-        ssize_t bytes_enviados = send(socketConexion, string, strlen(string), 0);
+        // Enviar el primer mensaje al cliente
+        strcpy(mensajeInicial, "Hola cliente, conexión establecida.\n");
+        ssize_t bytesEnviadosInicial = send(socketCliente, mensajeInicial, strlen(mensajeInicial), 0);
+        totalBytesEnviados += bytesEnviadosInicial;
 
-        contador_bytes += bytes_enviados;
-
-        if (bytes_enviados < 0) {
-            perror("Error al enviar datos");
+        if (bytesEnviadosInicial < 0) {
+            perror("Error al enviar el primer mensaje");
             exit(EXIT_FAILURE);
         }
 
-        // Imprimir el número de bytes enviados
-        printf("Número de bytes enviados: %zd\n", contador_bytes);
+        // Enviar el segundo mensaje al cliente
+        ssize_t bytesEnviadosSegundo = send(socketCliente, mensaje2, strlen(mensaje2), 0);
+        totalBytesEnviados += bytesEnviadosSegundo;
+
+        if (bytesEnviadosSegundo < 0) {
+            perror("Error al enviar el segundo mensaje");
+            exit(EXIT_FAILURE);
+        }
+
+        // Imprimir el número de bytes enviados en total
+        printf("Número total de bytes enviados: %zd\n", totalBytesEnviados);
 
         // Cerrar la conexión con el cliente
-        close(socketConexion);
+        close(socketCliente);
     }
 
-    // Cerrar el socket del servidor al terminar
+    // Cerrar el socket del servidor al finalizar
     close(socketServidor);
 
     return 0;

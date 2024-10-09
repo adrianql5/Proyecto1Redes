@@ -1,67 +1,79 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <arpa/inet.h>
+#include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
-#include <unistd.h>
+#include <string.h>
 #include <inttypes.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
-int socketCliente;
-struct sockaddr_in direccionCliente;
-socklen_t tamaño;
-uint16_t puerto;
-uint16_t puertoared;
-char string[1000];
-
-int main(int argc, char const *argv[]) {
-
-    // Verificar que se pasen suficientes argumentos
-    if (argc < 3) {
-        fprintf(stderr, "Uso: %s <IP> <Puerto>\n", argv[0]);
+int main(int argc, char const *argv[])
+{
+    // Comprobar que se pasaron 2 argumentos (IP y puerto)
+    if (argc != 3){
+        printf("Introducir IP y puerto como argumentos\n");
         exit(EXIT_FAILURE);
     }
 
-    // Convertir el argumento de puerto a número entero
-    puerto = atoi(argv[2]);  // puerto pasado como argumento
-    puertoared = htons(puerto);  // lo paso de formato host a red
+    // Copiamos la IP del argumento a una variable local
+    char ipServidorCadena[INET_ADDRSTRLEN];
+    strncpy(ipServidorCadena, argv[1], INET_ADDRSTRLEN);
 
-    // Crear socket en formato IPv4, orientado a conexión
+    // Convertimos la IP a formato binario para usarla en la estructura sockaddr_in
+    struct in_addr ipServidorBinario;
+    inet_pton(AF_INET, ipServidorCadena, (void *)&ipServidorBinario.s_addr);
+    
+    char mensajeRecibido[10000];  // Buffer para almacenar el mensaje recibido
+
+    // Convertimos el puerto a entero y lo guardamos como uint16_t
+    uint16_t puertoServidor;
+    puertoServidor = (uint16_t)atoi(argv[2]); 
+    
+    // Creamos el socket del cliente
+    int socketCliente;
+    struct sockaddr_in direccionServidor;
+
     socketCliente = socket(AF_INET, SOCK_STREAM, 0);
-    if (socketCliente < 0) {
-        perror("No se pudo crear el socket de Cliente");
+    if (socketCliente < 0){
+        perror("No se pudo crear el socket del cliente");
         exit(EXIT_FAILURE);
     }
 
-    tamaño = sizeof(direccionCliente);
+    // Configuramos la estructura de la dirección del servidor
+    direccionServidor.sin_family = AF_INET;                // Usamos IPv4
+    direccionServidor.sin_addr.s_addr = ipServidorBinario.s_addr; // Dirección IPv4 del servidor
+    direccionServidor.sin_port = htons(puertoServidor); // Convertimos el puerto al formato de red
 
-    direccionCliente.sin_family = AF_INET;  // formato IPv4
-    direccionCliente.sin_port = puertoared;  // número de puerto
-
-    // Convertir la dirección IP del servidor a formato de red y asignarla
-    if (inet_pton(AF_INET, argv[1], &direccionCliente.sin_addr) <= 0) {
+    // Verificamos si la IP del servidor es válida
+    if (inet_pton(AF_INET, argv[1], &direccionServidor.sin_addr) <= 0){
         perror("Dirección IP inválida o no soportada");
         exit(EXIT_FAILURE);
     }
 
-    // Intentar conectar al servidor
-    if (connect(socketCliente, (struct sockaddr *)&direccionCliente, tamaño) < 0) {
-        perror("No se pudo conectar");
+    // Intentamos conectarnos al servidor
+    if (connect(socketCliente, (struct sockaddr *)&direccionServidor, sizeof(struct sockaddr_in)) < 0) {
+        perror("No se pudo conectar al servidor");
         exit(EXIT_FAILURE);
     }
 
-    // Recibir mensaje del servidor
-    ssize_t bytesRecibidos = recv(socketCliente, string, sizeof(string), 0);
+    // Hacemos una pausa para permitir que el servidor envíe el mensaje
+    sleep(2); // Esto es necesario en localhost, para que los mensajes se envíen correctamente
+
+    // Recibimos el mensaje del servidor
+    ssize_t bytesRecibidos = recv(socketCliente, mensajeRecibido, sizeof(mensajeRecibido), 0);
     if (bytesRecibidos < 0) {
-        perror("Error al recibir");
+        perror("Error al recibir el mensaje");
         exit(EXIT_FAILURE);
     }
 
-    // Imprimir mensaje recibido y número de bytes
-    printf("Mensaje: %s. Número de bytes: %zd\n", string, bytesRecibidos);
+    // Mostramos el mensaje recibido y la cantidad de bytes
+    printf("Mensaje: %s. Número de bytes: %zd\n", mensajeRecibido, bytesRecibidos);
 
-    // Cerrar el socket
+    // Cerramos el socket
     close(socketCliente);
+    printf("------------------------------------------------\n");
+    printf("Conexión cerrada.\n");
 
     return 0;
 }
-
