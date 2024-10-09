@@ -58,7 +58,7 @@ int main(int argc, char const *argv[])
 
     // Bucle para recibir datos
     ssize_t n;
-    size_t tamano_mensaje = 5; // Cambia este valor para experimentar con diferentes tamaños
+    size_t tamano_mensaje = 10; // Cambia este valor para experimentar con diferentes tamaños
     printf("Recibiendo datos...\n");
 
     while ((n = recv(socketCliente, mensajeRecibido, tamano_mensaje, 0)) > 0) {
