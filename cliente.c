@@ -10,49 +10,72 @@
 
 int main(int argc, char const *argv[])
 {
-    if (argc != 3)
-    {
-        printf("Introducir IP y puerto como argumentos");
-        exit(EXIT_FAILURE);
-    }
-    char ip[INET_ADDRSTRLEN];
-    strncpy(ip, argv[1], INET_ADDRSTRLEN);
-    struct in_addr ipServidor;
-    inet_pton(AF_INET, ip, (void *)&ipServidor.s_addr);
-    int valorMensaje;
-    char mensaje[10000];
-    uint16_t puerto = (uint16_t)atoi(argv[2]); 
-    int sockeCliente;
-    struct sockaddr_in direccionServidor;
-    //char MensajeRecibido[500];
-    sockeCliente = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockeCliente < 0)
-    {
-        perror("No se pudo crear el servidor");
-        exit(EXIT_FAILURE);
-    }
-    direccionServidor.sin_family = AF_INET;                // IPv4
-    direccionServidor.sin_addr.s_addr = ipServidor.s_addr; // La dirección IPv4 entra cualquiera
-    direccionServidor.sin_port = htons(puerto);
-    if (connect(sockeCliente, (struct sockaddr *)&direccionServidor, sizeof(struct sockaddr_in)) < 0)
-    {
-        perror("No se pudo asignar direccion ");
+    // Comprobar que se pasaron 2 argumentos (IP y puerto)
+    if (argc != 3){
+        printf("Introducir IP y puerto como argumentos\n");
         exit(EXIT_FAILURE);
     }
 
-    sleep(2); //Tiempo para que le de tiempo a enviar el segundo mensaje
-    //Por lo menos en localhost si quitamos el sleep le da tiempo a enviar los dos mensajes
+    // Copiamos la IP del argumento a una variable local
+    char ipServidorCadena[INET_ADDRSTRLEN];
+    strncpy(ipServidorCadena, argv[1], INET_ADDRSTRLEN);
 
-    valorMensaje = recv(sockeCliente, mensaje,5000, 0); //Aumentar el tamaño máximo del mensaje que se puede enviar
-    if (valorMensaje < 0)
-    {
-        perror("Ocurrió un erro al enviar el mensaje");
-        exit(EXIT_FAILURE);
-    }
-    printf("%s\n", mensaje);
+    // Convertimos la IP a formato binario para usarla en la estructura sockaddr_in
+    struct in_addr ipServidorBinario;
+    inet_pton(AF_INET, ipServidorCadena, (void *)&ipServidorBinario.s_addr);
     
-    close(sockeCliente);
+    char mensajeRecibido[10000];  // Buffer para almacenar el mensaje recibido
+
+    // Convertimos el puerto a entero y lo guardamos como uint16_t
+    uint16_t puertoServidor = (uint16_t)atoi(argv[2]); 
+    
+    // Creamos el socket del cliente
+    int socketCliente;
+    struct sockaddr_in direccionServidor;
+
+    socketCliente = socket(AF_INET, SOCK_STREAM, 0);
+    if (socketCliente < 0){
+        perror("No se pudo crear el socket del cliente");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configuramos la estructura de la dirección del servidor
+    direccionServidor.sin_family = AF_INET;                // Usamos IPv4
+    direccionServidor.sin_addr.s_addr = ipServidorBinario.s_addr; // Dirección IPv4 del servidor
+    direccionServidor.sin_port = htons(puertoServidor); // Convertimos el puerto al formato de red
+
+    // Verificamos si la IP del servidor es válida
+    if (inet_pton(AF_INET, argv[1], &direccionServidor.sin_addr) <= 0){
+        perror("Dirección IP inválida o no soportada");
+        exit(EXIT_FAILURE);
+    }
+
+    // Intentamos conectarnos al servidor
+    if (connect(socketCliente, (struct sockaddr *)&direccionServidor, sizeof(struct sockaddr_in)) < 0) {
+        perror("No se pudo conectar al servidor");
+        exit(EXIT_FAILURE);
+    }
+
+    // Bucle para recibir datos
+    ssize_t n;
+    size_t tamano_mensaje = 10; // Cambia este valor para experimentar con diferentes tamaños
+    printf("Recibiendo datos...\n");
+
+    while ((n = recv(socketCliente, mensajeRecibido, tamano_mensaje, 0)) > 0) {
+        // Añadimos un null terminator para manejarlo como cadena
+        mensajeRecibido[n] = '\0';
+        printf("Mensaje recibido: %s. Número de bytes: %zd\n", mensajeRecibido, n);
+    }
+
+    // Comprobamos si hubo un error en la recepción
+    if (n < 0) {
+        perror("Error al recibir el mensaje");
+    }
+
+    // Cerramos el socket
+    close(socketCliente);
     printf("------------------------------------------------\n");
-    printf("Conexión cortada. Datos recibidos: %d bytes\n",valorMensaje);
+    printf("Conexión cerrada.\n");
+
     return 0;
 }
