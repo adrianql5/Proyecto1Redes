@@ -1,5 +1,5 @@
 /**
- * Código de Xabier Nóvoa Gómez
+ * Código de Xabier Nóvoa Gómez y Adrián Quiroga Linares
  * Servidor
  */
 
@@ -16,6 +16,11 @@
 #include <unistd.h>
 #include <ctype.h> // para toupper()
 
+
+/**
+ * Convertir una cadena de caracteres minúsculos a mayúsculos
+ * @param cadena cadena a convertir
+ */
 void toMayusculas(char cadena[])
 {
     int i = 0;
@@ -42,6 +47,7 @@ int main(int argc, char const *argv[])
     socklen_t tamano = sizeof(struct sockaddr_in);
     char mensajeRecibido[1000];
 
+    //Crea el socket encargado de recibir las conexiones entrantes
     sockEscucha = socket(AF_INET, SOCK_STREAM, 0);
     if (sockEscucha < 0)
     {
@@ -49,16 +55,19 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
+    // Volcar los datos en la structura
     direcEscucha.sin_family = AF_INET;                // IPv4
     direcEscucha.sin_addr.s_addr = htonl(INADDR_ANY); // La dirección IPv4 entra cualquiera
     direcEscucha.sin_port = puertoRed;                // El número de puerto
 
+    //Ligar el socket al puerto que se escribe como argumento
     if (bind(sockEscucha, (struct sockaddr *)&direcEscucha, sizeof(struct sockaddr_in)) < 0)
     {
         perror("No se pudo asignar direccion ");
         exit(EXIT_FAILURE);
     }
 
+    //Poner en escucha el servidor, el 5 es el número máximo de escuchas
     if (listen(sockEscucha, 5) < 0)
     {
         perror("Se ha producido un error al al intentar poner en escucha el servidor");
@@ -66,19 +75,25 @@ int main(int argc, char const *argv[])
     }
 
     printf("Servidor escuchando por el puerto %d...\n", puerto);
-    //Tener el cliente continuamente en escucha
+    //Tener el cliente esperando
     while (1)
     {
+        //Aceptar la conexión
         sockDatos = accept(sockEscucha, (struct sockaddr *)&direcDatos, &tamano);
+
         if (sockDatos < 0)
         {
             perror("No se pudo aceptar la conexion");
             exit(EXIT_FAILURE);
         }
+
+        //Convertir a formato presentación
         char ipCliente[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(direcDatos.sin_addr), ipCliente, INET_ADDRSTRLEN);
         printf("La dirección IP de la conexión entrante es: %s:%d\n", ipCliente, ntohs(direcDatos.sin_port));
         printf("Recibiendo archivo y convirtiendo los datos\n");
+
+        //Mientras se reciben líneas en el archivo, convertir a mayúsculas y enviar de vuelta
         while ((valorMensajeRecibido = recv(sockDatos, mensajeRecibido, sizeof(mensajeRecibido) + 1, 0)) > 0)
         {
             toMayusculas(mensajeRecibido);
@@ -89,7 +104,7 @@ int main(int argc, char const *argv[])
                 exit(EXIT_FAILURE);
             }
         }
-        //COntrol de errores
+        //Control de errores
         if (valorMensajeRecibido < 0)
         {
             perror("Ocurrió un error al recibir el mensaje");
