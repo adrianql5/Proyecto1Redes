@@ -60,7 +60,7 @@ int main(int argc, char const *argv[])
 
 
         //Como hemos envíado el segundo mensaje, no es necesario contar con el caracter de fin de línea
-        valorMensaje = send(socketCliente, mensaje, strlen(mensaje), 0); 
+        valorMensaje = send(socketCliente, mensaje, strlen(mensaje), 0);
         if (valorMensaje < 0)
         {
             perror("Ocurrió un erro al enviar el mensaje");

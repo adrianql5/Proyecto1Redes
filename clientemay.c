@@ -7,7 +7,7 @@
 #include <inttypes.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <ctype.h> 
+#include <ctype.h>
 
 void toMayusculas(char cadena[]){
     int i = 0;
@@ -32,7 +32,7 @@ int main(int argc, char const *argv[])
         printf("Error al abrir el archivo");
         exit(EXIT_FAILURE);
     }
-    
+
     char linea[1000];
     char ip[INET_ADDRSTRLEN];
     strncpy(ip, argv[2], INET_ADDRSTRLEN);
