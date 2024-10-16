@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+//Código de Xabier Nóboa Gómez y Adrián Quiroga Linares
+
 int main(int argc, char const *argv[])
 {
     if(argc != 2){

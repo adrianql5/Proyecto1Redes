@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
+//Código de Xabier Nóvoa Gómez y Adrián Quiroga Linares
+
 int main(int argc, char const *argv[])
 {
     // Comprobar que se pasaron 2 argumentos (IP y puerto)
