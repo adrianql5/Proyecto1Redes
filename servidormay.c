@@ -1,3 +1,9 @@
+/**
+ * Código de Xabier Nóvoa Gómez
+ * Servidor
+ */
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h> //para perror
@@ -42,6 +48,7 @@ int main(int argc, char const *argv[])
         perror("No se pudo crear el servidor");
         exit(EXIT_FAILURE);
     }
+
     direcEscucha.sin_family = AF_INET;                // IPv4
     direcEscucha.sin_addr.s_addr = htonl(INADDR_ANY); // La dirección IPv4 entra cualquiera
     direcEscucha.sin_port = puertoRed;                // El número de puerto
@@ -59,7 +66,7 @@ int main(int argc, char const *argv[])
     }
 
     printf("Servidor escuchando por el puerto %d...\n", puerto);
-
+    //Tener el cliente continuamente en escucha
     while (1)
     {
         sockDatos = accept(sockEscucha, (struct sockaddr *)&direcDatos, &tamano);
@@ -82,14 +89,19 @@ int main(int argc, char const *argv[])
                 exit(EXIT_FAILURE);
             }
         }
+        //COntrol de errores
         if (valorMensajeRecibido < 0)
         {
             perror("Ocurrió un error al recibir el mensaje");
             exit(EXIT_FAILURE);
         }
-        printf("%d",sockDatos);
+        //Cerrar conexión
         close(sockDatos);
-        printf("Esperando nueva conexión. Escuchando por el puerto %d...",puerto);
+
+        printf("Todos los datos enviados\n");
+        // Ponerle un \n al final del print para que haga flush
+        printf("--------------------------------------------------------\n");
+        printf("Esperando nueva conexión. Escuchando por el puerto %d...\n",puerto); 
     }
     close(sockEscucha);
     return 0;
