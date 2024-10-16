@@ -10,13 +10,11 @@
 
 int main(int argc, char const *argv[])
 {
-    // Comprobar que se pasaron 2 argumentos (IP y puerto)
-    if (argc != 3){
-        printf("Introducir IP y puerto como argumentos\n");
+    // Comprobar que se pasaron 3 o 4 argumentos (IP, puerto y opcional para sleep)
+    if (argc < 3 || argc > 4) {
+        printf("Uso: %s <IP> <puerto> [sleep]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
-
 
     // Copiamos la IP del argumento a una variable local
     char ipServidorCadena[INET_ADDRSTRLEN];
@@ -36,7 +34,7 @@ int main(int argc, char const *argv[])
     struct sockaddr_in direccionServidor;
 
     socketCliente = socket(AF_INET, SOCK_STREAM, 0);
-    if (socketCliente < 0){
+    if (socketCliente < 0) {
         perror("No se pudo crear el socket del cliente");
         exit(EXIT_FAILURE);
     }
@@ -44,10 +42,10 @@ int main(int argc, char const *argv[])
     // Configuramos la estructura de la dirección del servidor
     direccionServidor.sin_family = AF_INET;                // Usamos IPv4
     direccionServidor.sin_addr.s_addr = ipServidorBinario.s_addr; // Dirección IPv4 del servidor
-    direccionServidor.sin_port = htons(puertoServidor); // Convertimos el puerto al formato de red
+    direccionServidor.sin_port = htons(puertoServidor);    // Convertimos el puerto al formato de red
 
     // Verificamos si la IP del servidor es válida
-    if (inet_pton(AF_INET, argv[1], &direccionServidor.sin_addr) <= 0){
+    if (inet_pton(AF_INET, argv[1], &direccionServidor.sin_addr) <= 0) {
         perror("Dirección IP inválida o no soportada");
         exit(EXIT_FAILURE);
     }
@@ -58,19 +56,21 @@ int main(int argc, char const *argv[])
         exit(EXIT_FAILURE);
     }
 
-    // Bucle para recibir datos
+   // sleep(2);
+
+    // Recibimos los mensajes del servidor en una única llamada
     ssize_t n;
-    size_t tamano_mensaje = 5;
+    size_t tamano_mensaje = 1000;  // Aumentamos el tamaño del buffer
     printf("Recibiendo datos...\n");
 
-    while ((n = recv(socketCliente, mensajeRecibido, tamano_mensaje, 0)) > 0) {
-        // Añadimos \0  para manejarlo como cadena
+    n = recv(socketCliente, mensajeRecibido, tamano_mensaje, 0);
+    if (n > 0) {
+        // Añadimos un null terminator para manejarlo como cadena
         mensajeRecibido[n] = '\0';
         printf("Mensaje recibido: %s. Número de bytes: %zd\n", mensajeRecibido, n);
-    }
-
-    // Comprobamos si hubo un error en la recepción
-    if (n < 0) {
+    } else if (n == 0) {
+        printf("Conexión cerrada por el servidor.\n");
+    } else {
         perror("Error al recibir el mensaje");
     }
 
@@ -81,3 +81,4 @@ int main(int argc, char const *argv[])
 
     return 0;
 }
+
